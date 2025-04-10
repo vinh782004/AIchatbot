@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- thêm dòng này -->
+        <title>Chatbot Học Tập</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    
+<body>
+    <div class="chat-container">
+        <h1>🤖 Chatbot Học Tập</h1>
+        <div id="chat-box"></div>
+
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Nhập câu hỏi..." required>
+            <button type="submit">Gửi</button>
+        </form>
+
+        <div id="learn-form" style="display: none;">
+            <p>Bot chưa biết câu này. Bạn có thể dạy không?</p>
+            <input type="text" id="user-answer" placeholder="Nhập câu trả lời...">
+            <button onclick="submitAnswer()">Lưu câu trả lời</button>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatBox = document.getElementById('chat-box');
+        const learnForm = document.getElementById('learn-form');
+        let currentQuestion = '';
+
+        chatForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('user-input').value;
+            currentQuestion = userInput;
+            chatBox.innerHTML += `<div class="user">🧑: ${userInput}</div>`;
+            document.getElementById('user-input').value = '';
+
+            const response = await fetch('/chat', {
+                method: 'POST',
+                body: new URLSearchParams({ user_input: userInput }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            const data = await response.json();
+            chatBox.innerHTML += `<div class="bot">🤖: ${data.response}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            if (data.learn) {
+                learnForm.style.display = 'block';
+            } else {
+                learnForm.style.display = 'none';
+            }
+        };
+
+        async function submitAnswer() {
+            const answer = document.getElementById('user-answer').value;
+            if (!answer) return;
+            await fetch('/learn', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    user_question: currentQuestion,
+                    user_answer: answer
+                }),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            chatBox.innerHTML += `<div class="bot">🤖: Cảm ơn bạn! Mình đã học được rồi!</div>`;
+            document.getElementById('user-answer').value = '';
+            learnForm.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
